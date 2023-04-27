@@ -1,38 +1,58 @@
-import React from "react";
 import { prefixFileUrlWithBackendUrl, useLibrary } from "@strapi/helper-plugin";
 import PropTypes from "prop-types";
+import React from "react";
 
-const MediaLib = ({ isOpen, onChange, onToggle, editor, uploadConfig: { responsiveDimensions } }) => {
+const MediaLib = ({
+  isOpen,
+  onChange,
+  onToggle,
+  editor,
+  uploadConfig: { responsiveDimensions },
+}) => {
   const { components } = useLibrary();
   const MediaLibraryDialog = components["media-library"];
 
   const handleChangeAssets = (assets) => {
     let newValue = "";
 
-    assets.map(({name, url, alt, formats, mime}) => {
-
+    assets.map(({ name, url, alt, formats, mime }) => {
       if (mime.includes("image")) {
-
-          if (formats && responsiveDimensions) {
-            let set = "";
-            let keys = Object.keys(formats).sort((a, b) => formats[a].width - formats[b].width );
-            keys.map((k) => set += prefixFileUrlWithBackendUrl(formats[k].url) + ` ${formats[k].width}w,`);
-            newValue += `<img src="${url}" alt="${alt}" width="${formats[keys[keys.length-1]].width}px" srcset="${set}" />`;
-          } else {
-            newValue += `<img src="${url}" alt="${alt}" />`;
-          }
-
+        if (formats && responsiveDimensions) {
+          let set = "";
+          let keys = Object.keys(formats).sort(
+            (a, b) => formats[a].width - formats[b].width
+          );
+          keys.map(
+            (k) =>
+              (set +=
+                prefixFileUrlWithBackendUrl(formats[k].url) +
+                ` ${formats[k].width}w,`)
+          );
+          newValue += `<img src="${url}" alt="${alt}" width="${
+            formats[keys[keys.length - 1]].width
+          }px" srcset="${set}" />`;
+        } else {
+          newValue += `<img src="${url}" alt="${alt}" />`;
+        }
       } else if (mime.includes("application/pdf")) {
-
-          newValue = `<a href="${prefixFileUrlWithBackendUrl(url)}" download="${name}">${name || 'Download PDF'}</a>`;
-
+        newValue = `<a href="${prefixFileUrlWithBackendUrl(
+          url
+        )}" download="${name}">${name || "Download PDF"}</a>`;
+      } else if (
+        mime.match(
+          /(audio|video|x-(?:[0-9A-Za-z!#$%&'*+.^_`|~-]+))\/([0-9A-Za-z!#$%&'*+.^_`|~-]+)/g
+        )
+      ) {
+        newValue += `<video width="100%" height="100%" controls>
+          <source src="${url}" type="${mime}">
+        </video>`;
       }
       // Handle videos and other type of files by adding some code
     });
 
-    const viewFragment = editor.data.processor.toView( newValue );
-    const modelFragment = editor.data.toModel( viewFragment );
-    editor.model.insertContent( modelFragment );
+    const viewFragment = editor.data.processor.toView(newValue);
+    const modelFragment = editor.data.toModel(viewFragment);
+    editor.model.insertContent(modelFragment);
 
     onToggle();
   };
@@ -43,14 +63,11 @@ const MediaLib = ({ isOpen, onChange, onToggle, editor, uploadConfig: { responsi
       alt: f.alternativeText || f.name,
       url: prefixFileUrlWithBackendUrl(f.url),
       mime: f.mime,
-      formats: f.formats
+      formats: f.formats,
     }));
 
     handleChangeAssets(formattedFiles);
   };
-
-
-  
 
   if (!isOpen) {
     return null;
